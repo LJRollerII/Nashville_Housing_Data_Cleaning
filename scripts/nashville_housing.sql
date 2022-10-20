@@ -232,4 +232,3 @@ ALTER TABLE nashville_housing
 DROP COLUMN owner_address, tax_district, property_address, sale_date
 
 --===============================================================================================================--
---- Importing Data using OPENROWSET and BULK INSERT
