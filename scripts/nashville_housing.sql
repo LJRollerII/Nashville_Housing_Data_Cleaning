@@ -100,6 +100,7 @@ FROM nashville_housing
 
 --We'll need to add two new cloumns to seperate City & State
 --In python you can seperate two values in one column without making two new columns.
+--It's recommended to run the add query first, then the update query.
 
 ALTER TABLE nashville_housing
 ADD popertysplit_address Nvarchar(255);
@@ -161,14 +162,74 @@ FROM nashville_housing
 
 -- Change Y and N to Yes and No in "Sold as Vacant" column
 
+SELECT DISTINCT sold_as_vacant
+FROM nashville_housing
+--As of now the values once you run the query are Yes,Y,No, N
+
+--Let's look at this in a count
+SELECT DISTINCT sold_as_vacant, COUNT(sold_as_vacant)
+FROM nashville_housing
+GROUP BY sold_as_vacant
+ORDER BY 2
+-- Y = 52, N = 399, Y = 4623 , N = 51403
+-- When we clean this data, it should look like  Yes = 4675 & No = 51802
+
+--We'll use a CASE statement to clean this data
+SELECT sold_as_vacant,
+CASE WHEN sold_as_vacant = 'Y' THEN 'Yes'
+WHEN sold_as_vacant = 'N' THEN 'No'
+ELSE sold_as_vacant
+END
+FROM nashville_housing
+
+UPDATE nashville_housing
+SET sold_as_vacant = CASE WHEN sold_as_vacant = 'Y' THEN 'Yes'
+WHEN sold_as_vacant = 'N' THEN 'No'
+ELSE sold_as_vacant
+END
+--Update worked and numbers are correct
 
 --===============================================================================================================--
 -- Remove Duplicates
 
+--We will run a CTE with some windom functions to do this.
+--The window functions will help us find the duplicates
+-- We will partition by things that are unique to the rows
+
+WITH RowNumCTE AS(
+SELECT *,
+	ROW_NUMBER() OVER (
+	PARTITION BY parcel_id,
+				 property_address,
+				 sale_price,
+				 sale_date,
+				 legal_reference
+				 ORDER BY
+					unique_id
+					) row_num
+
+FROM nashville_housing
+)
+
+SELECT * --Insert DELETE here to delete the duplicate rows. Then use SELECT * again to make sure they're deleted.
+FROM RowNumCTE
+WHERE row_num > 1
+ORDER BY property_address
+
+
+
+SELECT *
+FROM nashville_housing
 
 --===============================================================================================================--
 -- Delete Unused Columns
 
+SELECT *
+FROM nashville_housing
+
+
+ALTER TABLE nashville_housing
+DROP COLUMN owner_address, tax_district, property_address, sale_date
 
 --===============================================================================================================--
 --- Importing Data using OPENROWSET and BULK INSERT
